@@ -1,0 +1,77 @@
+# ==================================================================
+# DataForge - PROD environment configuration
+# Differs from dev mainly in resource names, engine, and strictness.
+# Secrets are NEVER stored here - use AWS Secrets Manager / env vars.
+# ==================================================================
+
+environment: prod
+engine: spark
+
+aws:
+  region: eu-west-1
+  account_id: "000000000000"
+  deploy_role_arn: "arn:aws:iam::000000000000:role/dataforge-prod-deploy"
+
+s3:
+  raw_bucket: dataforge-prod-raw
+  bronze_bucket: dataforge-prod-bronze
+  silver_bucket: dataforge-prod-silver
+  gold_bucket: dataforge-prod-gold
+  quarantine_bucket: dataforge-prod-quarantine
+  scripts_bucket: dataforge-prod-glue-scripts
+
+local_lake:
+  root: data/lake
+  raw: data/lake/raw
+  bronze: data/lake/bronze
+  silver: data/lake/silver
+  gold: data/lake/gold
+  quarantine: data/lake/quarantine
+
+warehouse:
+  local_path: data/warehouse/dataforge.sqlite
+  redshift_secret_name: dataforge/prod/redshift
+
+source_db:
+  local_path: data/generated/source.sqlite
+  secret_name: dataforge/prod/source-db
+
+metadata:
+  local_path: data/warehouse/metadata.sqlite
+
+api:
+  base_url: https://api.internal.dataforge.example
+  timeout_seconds: 10
+  max_retries: 5
+  backoff_base_seconds: 0.5
+  page_size: 500
+
+sftp:
+  host: sftp.dataforge.example
+  port: 22
+  username: dataforge
+  remote_dir: /upload
+  local_landing: data/generated/sftp_inbox
+  archive_dir: data/lake/raw/sftp_archive
+
+streaming:
+  stream_name: dataforge-prod-transactions
+  shard_count: 8
+  local_mode: false
+  fraud:
+    high_value_threshold: 5000
+    velocity_window_seconds: 60
+    velocity_max_txns: 3
+    impossible_travel_kmh: 900
+
+data_quality:
+  fail_pipeline_on_error: true
+  report_path: data/warehouse/dq_report.json
+  valid_currencies: [USD, EUR, GBP, INR, JPY, CAD, AUD, CHF]
+  valid_txn_status: [PENDING, POSTED, DECLINED, REVERSED]
+  valid_channels: [POS, ATM, ONLINE, MOBILE, WIRE, SFTP]
+
+logging:
+  level: INFO
+  json: true
+  cloudwatch_log_group: /dataforge/prod

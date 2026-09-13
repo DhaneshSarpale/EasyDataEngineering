@@ -1,0 +1,6 @@
+branch_id,branch_name,city,country,latitude,longitude,opened_date
+BR00001,New York Branch 1,New York,US,40.71,-74.01,2024-05-22
+BR00002,Sydney Branch 2,Sydney,AU,-33.87,151.21,2024-12-06
+BR00003,Toronto Branch 3,Toronto,CA,43.65,-79.38,2024-02-01
+BR00004,Mumbai Branch 4,Mumbai,IN,19.08,72.88,2024-04-22
+BR00005,Mumbai Branch 5,Mumbai,IN,19.08,72.88,2025-05-13

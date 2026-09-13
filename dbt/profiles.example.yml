@@ -1,0 +1,27 @@
+# ==================================================================
+# Example dbt profile. Copy to ~/.dbt/profiles.yml and fill secrets
+# via env vars - NEVER commit real credentials.
+#
+# Two targets are shown:
+#   dev   -> local DuckDB (zero cost, great for iterating on models)
+#   prod  -> Amazon Redshift (credentials from env / Secrets Manager)
+# ==================================================================
+
+dataforge:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../data/warehouse/dataforge_dbt.duckdb
+      threads: 4
+
+    prod:
+      type: redshift
+      host: "{{ env_var('REDSHIFT_HOST') }}"
+      port: 5439
+      user: "{{ env_var('REDSHIFT_USER') }}"
+      password: "{{ env_var('REDSHIFT_PASSWORD') }}"
+      dbname: dataforge
+      schema: analytics
+      threads: 4
+      sslmode: require

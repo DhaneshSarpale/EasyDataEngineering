@@ -1,0 +1,32 @@
+version: 2
+
+# Sources declare the raw/silver tables dbt reads from. In AWS these are
+# Glue Data Catalog / Redshift Spectrum external tables over the silver S3
+# zone; locally they map to seeds or a loaded warehouse schema.
+sources:
+  - name: silver
+    description: "Cleansed silver-zone banking tables (conformed, deduplicated)."
+    schema: silver
+    tables:
+      - name: transactions
+        description: "One row per posted/pending transaction."
+        columns:
+          - name: transaction_id
+            description: "Natural key."
+            tests: [unique, not_null]
+          - name: account_id
+            tests: [not_null]
+          - name: amount
+          - name: currency
+      - name: customers
+        columns:
+          - name: customer_id
+            tests: [unique, not_null]
+      - name: accounts
+        columns:
+          - name: account_id
+            tests: [unique, not_null]
+      - name: merchants
+        columns:
+          - name: merchant_id
+            tests: [unique, not_null]

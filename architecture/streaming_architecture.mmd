@@ -1,0 +1,7 @@
+flowchart LR
+  APP[App / device events] --> P[Producer]
+  P -->|partition key = customer_id| K[Kinesis Data Stream]
+  K --> C[Consumer idempotent + checkpoint]
+  C --> FR[Fraud rules: high-value / velocity / impossible-travel]
+  FR --> OS[OpenSearch]
+  K --> FH[Firehose] --> S3[S3 raw archive] & RS[Redshift]

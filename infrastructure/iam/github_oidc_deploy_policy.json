@@ -1,0 +1,42 @@
+{
+  "_comment": "Permissions for the CI/CD deploy role assumed by GitHub Actions via OIDC (no long-lived AWS keys). Trust policy below restricts which repo/branch may assume it. See docs/security.md and .github/workflows/terraform.yml.",
+  "trust_policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": { "Federated": "arn:aws:iam::000000000000:oidc-provider/token.actions.githubusercontent.com" },
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Condition": {
+          "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
+          "StringLike": { "token.actions.githubusercontent.com:sub": "repo:YOUR_ORG/dataforge:ref:refs/heads/main" }
+        }
+      }
+    ]
+  },
+  "permissions_policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "TerraformManage",
+        "Effect": "Allow",
+        "Action": [
+          "s3:*", "kms:*", "iam:*", "glue:*", "states:*", "scheduler:*",
+          "kinesis:*", "firehose:*", "lambda:*", "sns:*", "cloudwatch:*",
+          "logs:*", "ec2:*Vpc*", "ec2:*Subnet*", "ec2:*SecurityGroup*"
+        ],
+        "Resource": "*",
+        "_note": "Broad for a portfolio; in production scope each action to specific resource ARNs and add permission boundaries."
+      },
+      {
+        "Sid": "TerraformState",
+        "Effect": "Allow",
+        "Action": ["s3:GetObject", "s3:PutObject", "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"],
+        "Resource": [
+          "arn:aws:s3:::dataforge-tfstate/*",
+          "arn:aws:dynamodb:eu-west-1:000000000000:table/dataforge-tflock"
+        ]
+      }
+    ]
+  }
+}

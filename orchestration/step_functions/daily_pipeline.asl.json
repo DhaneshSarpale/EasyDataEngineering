@@ -1,0 +1,121 @@
+{
+  "Comment": "DataForge daily batch pipeline. Orchestrates the ETL lifecycle: validate source -> extract -> validate schema -> transform (Glue) -> data quality -> load (Redshift) -> update metadata. Any failure routes to a Capture->Notify path that logs to CloudWatch and publishes to SNS.",
+  "StartAt": "ValidateSource",
+  "States": {
+    "ValidateSource": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "dataforge-dev-validation",
+        "Payload": { "stage": "validate_source", "table.$": "$.table" }
+      },
+      "ResultPath": "$.validate_source",
+      "Retry": [
+        { "ErrorEquals": ["States.TaskFailed"], "IntervalSeconds": 5, "MaxAttempts": 2, "BackoffRate": 2.0 }
+      ],
+      "Catch": [ { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CaptureError" } ],
+      "Next": "Extract"
+    },
+
+    "Extract": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "dataforge-dev-extract",
+        "Arguments": { "--table.$": "$.table" }
+      },
+      "ResultPath": "$.extract",
+      "Retry": [
+        { "ErrorEquals": ["Glue.ConcurrentRunsExceededException"], "IntervalSeconds": 30, "MaxAttempts": 3, "BackoffRate": 2.0 }
+      ],
+      "Catch": [ { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CaptureError" } ],
+      "Next": "ValidateSchema"
+    },
+
+    "ValidateSchema": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "dataforge-dev-validation",
+        "Payload": { "stage": "validate_schema", "table.$": "$.table" }
+      },
+      "ResultPath": "$.validate_schema",
+      "Catch": [ { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CaptureError" } ],
+      "Next": "Transform"
+    },
+
+    "Transform": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": { "JobName": "transactions_bronze_to_silver" },
+      "ResultPath": "$.transform",
+      "Catch": [ { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CaptureError" } ],
+      "Next": "DataQuality"
+    },
+
+    "DataQuality": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": { "JobName": "dataforge-dev-data-quality" },
+      "ResultPath": "$.data_quality",
+      "Catch": [ { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CaptureError" } ],
+      "Next": "DataQualityGate"
+    },
+
+    "DataQualityGate": {
+      "Type": "Choice",
+      "Comment": "Fail the run if critical DQ checks did not pass.",
+      "Choices": [
+        { "Variable": "$.data_quality.dq_passed", "BooleanEquals": false, "Next": "CaptureError" }
+      ],
+      "Default": "Load"
+    },
+
+    "Load": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": { "JobName": "transactions_silver_to_gold" },
+      "ResultPath": "$.load",
+      "Catch": [ { "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "CaptureError" } ],
+      "Next": "UpdateMetadata"
+    },
+
+    "UpdateMetadata": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "dataforge-dev-validation",
+        "Payload": { "stage": "update_metadata", "table.$": "$.table" }
+      },
+      "ResultPath": "$.update_metadata",
+      "Next": "Success"
+    },
+
+    "Success": { "Type": "Succeed" },
+
+    "CaptureError": {
+      "Type": "Pass",
+      "Comment": "Normalise the error payload before notifying.",
+      "Parameters": {
+        "pipeline": "dataforge-daily",
+        "table.$": "$.table",
+        "error.$": "$.error"
+      },
+      "ResultPath": "$.captured",
+      "Next": "Notify"
+    },
+
+    "Notify": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:eu-west-1:000000000000:dataforge-dev-alerts",
+        "Subject": "DataForge pipeline FAILED",
+        "Message.$": "$.captured"
+      },
+      "Next": "Fail"
+    },
+
+    "Fail": { "Type": "Fail", "Error": "PipelineFailed", "Cause": "See CloudWatch logs + SNS alert." }
+  }
+}

@@ -1,0 +1,8 @@
+flowchart TD
+  SRC[(Source DB / files / API)] --> EXT[Extract batch/incremental]
+  EXT --> RAW[Raw] --> BRZ[Bronze]
+  BRZ --> DQ{Data quality}
+  DQ -- pass --> SLV[Silver]
+  DQ -- fail --> Q[Quarantine + reason]
+  SLV --> STAR[Star schema dims+facts] --> GLD[Gold]
+  GLD --> ATH[Athena] & RS[Redshift] --> BI[BI]

@@ -1,0 +1,37 @@
+# ==================================================================
+# DataForge dbt project
+# Models the gold/analytics layer on top of the warehouse (Redshift in
+# AWS MODE; a DuckDB/Postgres target works locally). Demonstrates
+# sources, staging -> intermediate -> marts, tests, snapshots, macros,
+# seeds, and incremental models.
+# ==================================================================
+
+name: dataforge
+version: "0.1.0"
+config-version: 2
+
+profile: dataforge
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+test-paths: ["tests"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  dataforge:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: ephemeral
+    marts:
+      +materialized: table
+      +schema: marts
+
+seeds:
+  dataforge:
+    +schema: seeds

@@ -1,0 +1,25 @@
+name: CI
+
+# Lint + type-friendly checks on every push / PR. Fast feedback (no AWS).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install (lite deps)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[api,files,dev]"
+      - name: Ruff lint
+        run: ruff check src tests scripts
+      - name: Black format check
+        run: black --check src tests scripts

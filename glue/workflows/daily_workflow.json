@@ -1,0 +1,17 @@
+{
+  "_comment": "Reference AWS Glue Workflow: crawl bronze -> run bronze->silver job -> run silver->gold job -> crawl silver/gold. In production, orchestration is done by Step Functions (see orchestration/step_functions); this Glue Workflow is the Glue-native alternative.",
+  "name": "dataforge-dev-daily",
+  "nodes": [
+    { "type": "TRIGGER", "name": "start-schedule", "trigger": { "type": "SCHEDULED", "schedule": "cron(0 3 * * ? *)" } },
+    { "type": "CRAWLER", "name": "dataforge-dev-bronze-crawler" },
+    { "type": "JOB", "name": "transactions_bronze_to_silver" },
+    { "type": "JOB", "name": "transactions_silver_to_gold" },
+    { "type": "CRAWLER", "name": "dataforge-dev-silver-crawler" }
+  ],
+  "edges": [
+    { "from": "start-schedule", "to": "dataforge-dev-bronze-crawler" },
+    { "from": "dataforge-dev-bronze-crawler", "to": "transactions_bronze_to_silver" },
+    { "from": "transactions_bronze_to_silver", "to": "transactions_silver_to_gold" },
+    { "from": "transactions_silver_to_gold", "to": "dataforge-dev-silver-crawler" }
+  ]
+}

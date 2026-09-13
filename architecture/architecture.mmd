@@ -1,0 +1,20 @@
+flowchart LR
+  subgraph Sources
+    DB[(Databases)]
+    API[REST API]
+    FILES[Files CSV/JSON/XML/Parquet/Avro]
+    SFTP[SFTP]
+    APP[App events]
+  end
+  DB --> BATCH[Batch/Incremental/CDC]
+  API --> APII[API client]
+  FILES --> FILE[File ingestion]
+  SFTP --> FILE
+  APP --> STREAM[Kinesis producer]
+  BATCH & APII & FILE --> RAW[S3 Raw]
+  RAW --> BRONZE[S3 Bronze] --> SILVER[S3 Silver] --> GOLD[S3 Gold]
+  SILVER -. bad rows .-> QUAR[S3 Quarantine]
+  GOLD --> ATHENA[Athena] & REDSHIFT[Redshift]
+  STREAM --> KINESIS[Kinesis] --> FRAUD[Fraud detector] --> OS[OpenSearch]
+  KINESIS --> FIREHOSE[Firehose] --> RAW
+  ATHENA & REDSHIFT --> BI[BI / Dashboard]

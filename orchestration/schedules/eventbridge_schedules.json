@@ -1,0 +1,19 @@
+{
+  "_comment": "EventBridge Scheduler rules that trigger the orchestrations. Provisioned by Terraform. cron() times are UTC.",
+  "schedules": [
+    {
+      "name": "dataforge-dev-daily-batch",
+      "description": "Kick off the daily Step Functions batch pipeline at 03:00 UTC.",
+      "schedule_expression": "cron(0 3 * * ? *)",
+      "target": "arn:aws:states:eu-west-1:000000000000:stateMachine:dataforge-dev-daily",
+      "input": { "table": "transactions" }
+    },
+    {
+      "name": "dataforge-dev-hourly-incremental",
+      "description": "Hourly incremental transaction load.",
+      "schedule_expression": "cron(0 * * * ? *)",
+      "target": "arn:aws:states:eu-west-1:000000000000:stateMachine:dataforge-dev-incremental",
+      "input": { "table": "transactions" }
+    }
+  ]
+}

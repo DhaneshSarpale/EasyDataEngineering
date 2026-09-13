@@ -1,0 +1,33 @@
+{
+  "_comment": "Reference Glue crawler definitions. Deployed via Terraform (infrastructure/terraform/modules/glue). Crawlers infer schema + partitions of S3 zones and register tables in the dataforge Data Catalog database.",
+  "database": "dataforge_dev",
+  "crawlers": [
+    {
+      "name": "dataforge-dev-bronze-crawler",
+      "role": "arn:aws:iam::000000000000:role/dataforge-dev-glue",
+      "targets": {
+        "s3Targets": [
+          { "path": "s3://dataforge-dev-bronze/transactions/" },
+          { "path": "s3://dataforge-dev-bronze/customers/" }
+        ]
+      },
+      "schemaChangePolicy": {
+        "updateBehavior": "UPDATE_IN_DATABASE",
+        "deleteBehavior": "LOG"
+      },
+      "recrawlPolicy": { "recrawlBehavior": "CRAWL_NEW_FOLDERS_ONLY" },
+      "schedule": "cron(0 2 * * ? *)"
+    },
+    {
+      "name": "dataforge-dev-silver-crawler",
+      "role": "arn:aws:iam::000000000000:role/dataforge-dev-glue",
+      "targets": {
+        "s3Targets": [ { "path": "s3://dataforge-dev-silver/" } ]
+      },
+      "schemaChangePolicy": {
+        "updateBehavior": "UPDATE_IN_DATABASE",
+        "deleteBehavior": "LOG"
+      }
+    }
+  ]
+}

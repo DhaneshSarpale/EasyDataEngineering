@@ -1,0 +1,5 @@
+flowchart LR
+  DB[(Source DB WAL/binlog)] --> DMS[AWS DMS full-load + CDC]
+  DMS --> S3[S3 CDC events: op + before/after image]
+  S3 --> GLUE[Glue apply]
+  GLUE --> CUR[Curated latest-state table]

@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: fct_transactions
+    description: "Incremental transaction fact at grain = one row per transaction."
+    columns:
+      - name: transaction_id
+        description: "Grain / primary key."
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: currency
+        tests:
+          - accepted_values:
+              values: ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF']
+      - name: fraud_flag
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+  - name: customer_monthly_spend
+    description: "Customer spend aggregated by calendar month."
+    columns:
+      - name: customer_id
+        tests: [not_null]

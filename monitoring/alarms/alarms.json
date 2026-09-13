@@ -1,0 +1,41 @@
+{
+  "_comment": "Reference CloudWatch alarm definitions. The live alarms are created by the monitoring Terraform module; this file documents the full alarm set and thresholds a reviewer should expect.",
+  "alarms": [
+    {
+      "name": "dataforge-dev-glue-job-failed",
+      "metric": "Glue/glue.driver.aggregate.numFailedTasks",
+      "dimensions": { "JobName": "transactions_bronze_to_silver", "Type": "count" },
+      "threshold": 1, "comparison": "GreaterThanOrEqualToThreshold",
+      "period": 300, "evaluation_periods": 1,
+      "action": "SNS dataforge-dev-alerts",
+      "why": "Any failed Glue task should page the on-call."
+    },
+    {
+      "name": "dataforge-dev-stream-lag",
+      "metric": "AWS/Kinesis/GetRecords.IteratorAgeMilliseconds",
+      "dimensions": { "StreamName": "dataforge-dev-transactions" },
+      "threshold": 60000, "comparison": "GreaterThanThreshold",
+      "period": 60, "evaluation_periods": 5,
+      "action": "SNS dataforge-dev-alerts",
+      "why": "Consumer falling >60s behind indicates under-provisioning."
+    },
+    {
+      "name": "dataforge-dev-sfn-failed",
+      "metric": "AWS/States/ExecutionsFailed",
+      "dimensions": { "StateMachineArn": "arn:aws:states:eu-west-1:000000000000:stateMachine:dataforge-dev-daily" },
+      "threshold": 1, "comparison": "GreaterThanOrEqualToThreshold",
+      "period": 300, "evaluation_periods": 1,
+      "action": "SNS dataforge-dev-alerts",
+      "why": "A failed daily pipeline execution must alert immediately."
+    },
+    {
+      "name": "dataforge-dev-lambda-errors",
+      "metric": "AWS/Lambda/Errors",
+      "dimensions": { "FunctionName": "dataforge-dev-api-ingestion" },
+      "threshold": 3, "comparison": "GreaterThanThreshold",
+      "period": 300, "evaluation_periods": 1,
+      "action": "SNS dataforge-dev-alerts",
+      "why": "Repeated API-ingestion errors suggest an upstream API outage."
+    }
+  ]
+}

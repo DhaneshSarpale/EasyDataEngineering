@@ -1,0 +1,46 @@
+# ==================================================================
+# DataForge - synthetic data volume profiles
+# Selected with: make generate-data RECORDS=<profile>
+# or: python -m dataforge.data_generation.generate --profile <profile>
+# ==================================================================
+
+# Fraction of records intentionally corrupted to exercise the
+# data-quality / quarantine paths (applied to transactions & customers).
+bad_data_ratio: 0.02
+
+profiles:
+  small:
+    customers: 1000
+    accounts: 2000
+    transactions: 20000
+    cards: 1000
+    loans: 500
+    merchants: 300
+    branches: 50
+    employees: 400
+    payments: 5000
+    fraud_events: 200
+
+  medium:
+    customers: 10000
+    accounts: 20000
+    transactions: 200000
+    cards: 10000
+    loans: 5000
+    merchants: 1000
+    branches: 100
+    employees: 2000
+    payments: 50000
+    fraud_events: 2000
+
+  full:
+    customers: 100000
+    accounts: 200000
+    transactions: 2000000
+    cards: 100000
+    loans: 50000
+    merchants: 5000
+    branches: 300
+    employees: 10000
+    payments: 500000
+    fraud_events: 20000

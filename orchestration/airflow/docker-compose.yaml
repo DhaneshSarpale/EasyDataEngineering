@@ -1,0 +1,60 @@
+# ==================================================================
+# Local Airflow (LocalExecutor + Postgres) for running the DataForge DAG
+# without MWAA. Start with:  docker compose up
+# Then open http://localhost:8080  (user/pass: airflow/airflow)
+#
+# This is the free, local alternative to Amazon MWAA (which costs ~$0.49/hr
+# for the smallest environment - see docs/cost-optimization.md).
+# ==================================================================
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.2
+  environment:
+    &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    PYTHONPATH: /opt/airflow/dataforge_src
+    DATAFORGE_ENV: dev
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ../../src:/opt/airflow/dataforge_src
+    - ../../config:/opt/airflow/config
+    - ../../data:/opt/airflow/data
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+    ports:
+      - "5432:5432"
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        pip install faker pyyaml pyarrow &&
+        airflow db migrate &&
+        airflow users create --username airflow --password airflow \
+          --firstname a --lastname b --role Admin --email a@b.c
+
+  webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+
+  scheduler:
+    <<: *airflow-common
+    command: scheduler
